@@ -219,17 +219,39 @@ class App(tk.Tk):
             complexidade_str = f"{model} | MAPE: {mape:.3f} | a: {a:.3g}"
             for i in range(len(tempos)):
                 self.tree.insert("", "end", values=(f"{tempos[i]:.6f}", tamanhos[i], resultados[i], complexidade_str))
-
+            
+            # Análise estática para identificar técnicas
             tecnica = []
-            if re.search(r'def\s+(\w+)\s*\(.*\):[\s\S]*\\1\(', code):
+
+            # Recursão: chamada da própria função
+            if re.search(r'def\s+(\w+)\s*\(.*\):[\s\S]*?\1\s*\(', code):
                 tecnica.append('Recursivo')
+
+            # Dividir para conquistar: uso de divisão e chamadas recursivas
+            if re.search(r'(divid|metade|meio|split)', code, re.IGNORECASE) and 'return' in code and re.search(r'def\s+(\w+)\s*\(.*\):[\s\S]*?\1\s*\(', code):
+                tecnica.append('Dividir para Conquistar')
+
+            # Programação dinâmica: uso de cache, memoização ou tabelas
+            if re.search(r'(memo|cache|dp|tabela)', code, re.IGNORECASE):
+                tecnica.append('Programação Dinâmica')
+
+            # Iteração: presença de laços
             if 'for' in code or 'while' in code:
                 tecnica.append('Iterativo')
-            if 'memo' in code or 'cache' in code:
-                tecnica.append('Programação Dinâmica')
-            if 'ops' in code:
-                tecnica.append('Contagem de operações')
+
+            # Busca binária: uso de meio, comparação com alvo
+            if re.search(r'(meio|mid|target|busca_binaria)', code, re.IGNORECASE):
+                tecnica.append('Busca Binária')
+
+            # Força bruta: múltiplos loops ou tentativas
+            # Recursão sem otimização = força bruta
+            if re.search(r'def\s+(\w+)\s*\(.*\):[\s\S]*?\1\s*\(', code) and not re.search(r'(memo|cache|lru_cache)', code, re.IGNORECASE):
+                tecnica.append('Força Bruta')
+
+
+            # Fallback
             tecnica_str = ', '.join(tecnica) if tecnica else 'Não identificado'
+
 
             msg = f"Complexidade: {complexidade_str}\nTécnica: {tecnica_str}"
             if ops_count is not None:
